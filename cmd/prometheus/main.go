@@ -241,6 +241,9 @@ func (c *flagConfig) setFeatureListOptions(logger log.Logger) error {
 }
 
 func main() {
+	// alberthk DEBUG if evn has "DEBUG", enable golang profiling feature,
+	// golang pprof "block" and "mutex" needs to be enabled by hand
+	// tracing is still too heavy for almost all apps
 	if os.Getenv("DEBUG") != "" {
 		runtime.SetBlockProfileRate(20)
 		runtime.SetMutexProfileFraction(20)
@@ -251,6 +254,8 @@ func main() {
 		newFlagRetentionDuration model.Duration
 	)
 
+	// alberthk pattern: main struct define flagConfig to center all "flags" and "config" in one place
+	// create one instance of this, also can using flag package "xxxVar" binding parser to it
 	cfg := flagConfig{
 		notifier: notifier.Options{
 			Registerer: prometheus.DefaultRegisterer,
@@ -468,6 +473,9 @@ func main() {
 		os.Exit(2)
 	}
 
+	// alberthk using "promlog" to wrap logging details, other component only needs to known about the "logger" interface
+	// see github.com/go-kit/log, in client side, import github.com/go-kit/level, and use as
+	// level.XXXLog(logger).Log("key", "value", "key2", "values", ...)
 	logger := promlog.New(&cfg.promlogConfig)
 
 	if err := cfg.setFeatureListOptions(logger); err != nil {
@@ -740,6 +748,8 @@ func main() {
 	}
 
 	if !agentMode {
+		// alberthk component in prometheus share same rules, using all exported struct XXXOpts to center all parameters in one place,
+		// and pass it to NewXXX func, and create the component instance
 		opts := promql.EngineOpts{
 			Logger:                   log.With(logger, "component", "query engine"),
 			Reg:                      prometheus.DefaultRegisterer,
